@@ -181,6 +181,7 @@ def migrar(ruta_xml):
                 "domicilio_emisor":  registro.get("domicilio_emisor"),
                 "domicilio_receptor": None,
                 "peso":             registro.get("peso", 0.00),
+                "created_at":       registro.get("fecha"),
                 "creado_por":       USER_ID_IMPORTACION,
             }
             envio_id = insertar_envio(cursor, datos_envio)

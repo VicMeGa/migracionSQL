@@ -132,11 +132,15 @@ def migrar(ruta_xml):
 
         try:
             cursor.execute("SAVEPOINT sp_fila")
-            # ── 1. Resolver sucursal emisor ───────────────────────────────
-            sucursal_emisor_id = resolver_sucursal_id(registro, ETIQUETAS_CTX)
 
-            # ── 2. Resolver sucursal receptor ─────────────────────────────
-            # resolver_sucursal_destino nunca retorna None — fallback a DESCONOCIDO
+            # ── 1. Resolver sucursales emisor y receptor ──────────────────
+            # FORMATO_11 (USA→MEX):
+            #   emisor   = sucursal USA → inferida por prefijo del folio
+            #   receptor = sucursal MEX → viene de col 11 (DEST) via origen_raw
+            # FORMATO_9 (MEX→USA):
+            #   emisor   = sucursal MEX → origen_raw o prefijo de folio
+            #   receptor = sucursal USA → viene de col 6 (destino)
+            sucursal_emisor_id   = resolver_sucursal_id(registro, ETIQUETAS_CTX)
             sucursal_receptor_id = resolver_sucursal_destino(registro["destino"])
 
             # ── 3. firstOrCreate cliente receptor ────────────────────────
@@ -180,6 +184,7 @@ def migrar(ruta_xml):
                 "domicilio_emisor":  registro.get("domicilio_emisor"),
                 "domicilio_receptor": None,
                 "peso":             registro.get("peso", 0.00),
+                "created_at":       registro.get("fecha"),
                 "creado_por":       USER_ID_IMPORTACION,
             }
             envio_id = insertar_envio(cursor, datos_envio)

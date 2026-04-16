@@ -355,7 +355,7 @@ def insertar_envio(cursor, datos):
             %s, %s, %s, %s,
             %s, %s, %s, %s,
             %s, %s,
-            NOW(), NOW()
+            %s, %s
         )
         RETURNING id
         """,
@@ -376,8 +376,10 @@ def insertar_envio(cursor, datos):
             float(datos.get("precio_total",  DEFAULT_PRECIO_TOTAL)),
             float(datos.get("pago_efectivo", DEFAULT_PAGO_EFECTIVO)),
             float(datos.get("pago_tarjeta",  DEFAULT_PAGO_TARJETA)),
-            False,                              # is_entregado = False por default
+            False,
             datos["creado_por"],
+            datos.get("created_at"),   # fecha real del XML (o None → PostgreSQL usa NOW)
+            datos.get("created_at"),   # updated_at = mismo valor inicial
         )
     )
     return cursor.fetchone()["id"]
