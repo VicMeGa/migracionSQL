@@ -131,6 +131,16 @@ def resolver_sucursal_id(registro, etiquetas_contexto):
 
     # ── Prioridad 1: columna Origen tiene valor ───────────────────────────
     if origen:
+        # Si origen es numérico → es un ID directo de BD
+        try:
+            id_directo = int(float(str(origen)))
+            if id_directo > 0:
+                id_a_nombre = {v: k for k, v in NOMBRE_A_SUCURSAL_ID.items()}
+                if id_directo in id_a_nombre:
+                    return id_directo
+        except (ValueError, TypeError):
+            pass  # no es numérico, buscar por nombre
+
         try:
             return _lookup_sucursal_id(origen)
         except (KeyError, ValueError) as e:
@@ -208,23 +218,36 @@ def resolver_sucursal_destino(destino_raw):
     if not destino_raw:
         return FALLBACK_ID
 
-    destino = destino_raw.strip().upper()
+    destino = str(destino_raw).strip()
+
+    # Paso 0: si el destino es un número entero, es un ID directo de BD
+    try:
+        id_directo = int(float(destino))
+        if id_directo > 0:
+            # Verificar que el ID existe en el catálogo
+            id_a_nombre = {v: k for k, v in NOMBRE_A_SUCURSAL_ID.items()}
+            if id_directo in id_a_nombre:
+                return id_directo
+            # Si no existe en catálogo, caer al fallback
+    except (ValueError, TypeError):
+        pass  # no es numérico, continuar con búsqueda por nombre
+
+    destino_upper = destino.upper()
 
     # Paso 1: buscar en aliases
-    nombre_resuelto = ALIASES_NOMBRE.get(destino, destino)
+    nombre_resuelto = ALIASES_NOMBRE.get(destino_upper, destino_upper)
 
     # Paso 2: buscar ID en catálogo maestro
     sucursal_id = NOMBRE_A_SUCURSAL_ID.get(nombre_resuelto)
-
     if sucursal_id:
         return sucursal_id
 
-    # Paso 3: intentar lookup directo con el string original en mayúsculas
-    sucursal_id = NOMBRE_A_SUCURSAL_ID.get(destino)
+    # Paso 3: lookup directo
+    sucursal_id = NOMBRE_A_SUCURSAL_ID.get(destino_upper)
     if sucursal_id:
         return sucursal_id
 
-    # Paso 4: fallback a DESCONOCIDO — registra warning pero nunca falla
+    # Paso 4: fallback a DESCONOCIDO
     logger.warning(
         f"Destino '{destino_raw.strip()}' no resuelto en catálogo. "
         f"Se asigna DESCONOCIDO (ID={FALLBACK_ID})."

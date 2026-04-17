@@ -227,21 +227,59 @@ def _normalizar_nombre_sucursal(nombre):
 def _detectar_formato(rows):
     """
     Detecta FORMATO_9 o FORMATO_11 leyendo el header (fila 1).
-    FORMATO_11: primera celda contiene "FECHA" o "DATE"
-    FORMATO_9:  cualquier otro caso
+
+    FORMATO_11: alguna celda del header contiene "FECHA", "DATE" o "# ENV"
+    FORMATO_9:  alguna celda contiene "NO. PAQ", "PAQ", "NO PAQ"
+
+    Busca en todas las celdas del header para no depender de la posición exacta
+    (Excel puede saltar celdas con ss:Index y dejar None en posición 0).
     """
     if not rows:
         raise ValueError("El archivo XML no contiene filas.")
 
-    celdas = _extraer_celdas_de_fila(rows[0], 12)
-    primera = _valor(celdas[0])
-    primera_upper = str(primera).strip().upper() if primera else ""
+    def _leer_valores_fila(row, n_cols):
+        celdas = _extraer_celdas_de_fila(row, n_cols)
+        return [str(_valor(c)).strip().upper() for c in celdas if _valor(c) is not None]
 
-    if primera_upper in ("FECHA", "DATE"):
+    # Intentar detectar por header (fila 1)
+    valores_header = _leer_valores_fila(rows[0], 12)
+    logger.info(f"Header detectado: {valores_header[:6]}")
+
+    indicadores_11 = {"FECHA", "DATE", "# ENV", "#ENV"}  # exclusivos de USA→MEX
+    indicadores_9  = {"NO. PAQ.", "NO PAQ", "DESTINATARIO", "PAQ."}
+
+    if any(v in indicadores_11 for v in valores_header):
         logger.info("Formato detectado: FORMATO_11 (USA → MEX, 11 columnas)")
         return FORMATO_11
 
-    logger.info("Formato detectado: FORMATO_9 (MEX → USA, 9 columnas)")
+    if any(v in indicadores_9 for v in valores_header):
+        logger.info("Formato detectado: FORMATO_9 (MEX → USA, 9 columnas)")
+        return FORMATO_9
+
+    # Header vacío — escanear las primeras filas buscando indicadores de formato
+    logger.warning("Header vacío o sin indicadores claros, escaneando filas de datos...")
+
+    for fila_idx in range(1, min(4, len(rows))):
+        vals = _leer_valores_fila(rows[fila_idx], 12)
+        logger.info(f"Fila {fila_idx + 1} para detección: {vals[:5]}")
+
+        # FORMATO_11: fila de header secundario contiene "REMITENTE" y "DIRECCION"
+        if "REMITENTE" in vals and "DIRECCION" in vals:
+            logger.info("Formato detectado por header secundario: FORMATO_11 (USA → MEX)")
+            return FORMATO_11
+
+        # FORMATO_11: primera columna es fecha ISO o con /
+        if vals:
+            col1 = vals[0]
+            es_fecha = ("/" in col1 or "T00:00:00" in col1)
+            col2 = vals[1] if len(vals) > 1 else ""
+            # col2 es folio alfanumérico corto (B1, B102, etc.)
+            es_folio_corto = bool(col2) and len(col2) <= 6 and any(c.isalpha() for c in col2)
+            if es_fecha and es_folio_corto:
+                logger.info("Formato detectado por datos: FORMATO_11 (USA → MEX)")
+                return FORMATO_11
+
+    logger.info("Formato detectado por datos: FORMATO_9 (MEX → USA)")
     return FORMATO_9
 
 
@@ -292,8 +330,8 @@ def _extraer_registro_formato11(celdas, numero_fila):
     6:Destinatario  7:Tel(receptor)  8:Paq  9:LB  10:Descripcion  11:DEST
 
     Lógica de sucursales:
-      - sucursal_emisor  → se infiere del PREFIJO del folio (ej: B → Brooklyn/Oxnard)
-      - sucursal_receptor → viene de DEST (col 11), sucursal MEX destino
+      - sucursal_emisor  → prefijo del folio (ej: B → Brooklyn/Oxnard)
+      - sucursal_receptor → DEST (col 11), sucursal MEX destino
     """
     folio = _parsear_folio(celdas[1])
     if not folio:
@@ -390,6 +428,18 @@ def parsear_xml(ruta_archivo):
             continue
 
         vacias_consecutivas = 0
+
+        # Omitir filas que parezcan headers secundarios (textos de columna, no datos)
+        valores_fila = [str(_valor(c)).strip().upper() for c in celdas if _valor(c)]
+        es_header_secundario = (
+            "REMITENTE" in valores_fila and "DESTINATARIO" in valores_fila
+        ) or (
+            _valor(celdas[0]) and str(_valor(celdas[0])).strip().upper() in
+            ("FECHA", "DATE", "NO. PAQ.", "NO PAQ", "# ENV", "#ENV", "PAQ.")
+        )
+        if es_header_secundario:
+            logger.info(f"Fila {numero_fila_xml}: header secundario omitido.")
+            continue
 
         registro = (
             _extraer_registro_formato11(celdas, numero_fila_xml)
