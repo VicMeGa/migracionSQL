@@ -7,11 +7,12 @@
 # 1. CONEXIÓN A BASE DE DATOS
 # -----------------------------------------------------------------------------
 DB_CONFIG = {
-    "host":     "192.168.0.115",
+    #"host":     "192.168.0.115",
+    "host":     "100.96.225.107",
     "port":     5432,
     "user":     "tulcingo_user",
     "password": "123456",
-    "database": "tulcingoo",
+    "database": "fecha",
 }
 
 USER_ID_IMPORTACION = 1   # ← Cambia al ID real del usuario Laravel importador
@@ -118,6 +119,7 @@ ALIASES_NOMBRE = {
     # ── CUAUTLA AÑO DE JUAREZ ────────────────────────────────────────────────
     "CUAUTLA AÑO DE JUAREZ":        "CUAUTLA AÑO DE JUAREZ",
     "AÑO DE JUAREZ":                "CUAUTLA AÑO DE JUAREZ",
+    "CUAUTLA AÑO JUAREZ":           "CUAUTLA AÑO DE JUAREZ",   # sin DE
     "CUAUTLA DE JUAREZ":            "CUAUTLA AÑO DE JUAREZ",
     "CUAUTLA JUAREZ":               "CUAUTLA AÑO DE JUAREZ",
     "AÑO NUEVO DE JUAREZ":          "CUAUTLA AÑO DE JUAREZ",
@@ -169,6 +171,7 @@ ALIASES_NOMBRE = {
     "HUAMUXTITLAN":                 "HUAMUXTITLAN",
     "HUAMUX-LT":                    "HUAMUXTITLAN",
     "HUAMUX LT":                    "HUAMUXTITLAN",
+    "HUAMUX":                       "HUAMUXTITLAN",   # alias corto usado en XML
 
     # ── TOLTECAMILA ──────────────────────────────────────────────────────────
     "TOLTECAMILA":                  "TOLTECAMILA",
@@ -254,6 +257,7 @@ ALIASES_NOMBRE = {
     "TL":       "Tlaxcala",
     "DES":      "DESCONOCIDO",
     "ANiO":     "Año Nuevo",
+    "ANIO":     "Año Nuevo",    # variante sin tilde usada en XML USA→MEX
     "ATX-MAY":  "Atlixco-Matamoros",
     "V":        "CHILPANCINGO GRO.",
     "U":        "HUAJUAPAN",
@@ -363,6 +367,7 @@ ETIQUETAS_UNICAS = {
     "TL":       "Tlaxcala",
     "DES":      "DESCONOCIDO",
     "ANiO":     "Año Nuevo",
+    "ANIO":     "Año Nuevo",    # variante sin tilde usada en XML USA→MEX
     "ATX-MAY":  "Atlixco-Matamoros",
 
     # ── Etiquetas del ODS (mapeadas a nombres reales de BD) ───────────────────

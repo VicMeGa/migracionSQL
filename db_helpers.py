@@ -259,7 +259,7 @@ def resolver_sucursal_destino(destino_raw):
 # OPERACIONES DE BASE DE DATOS
 # =============================================================================
 
-def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id):
+def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id, fecha_xml=None):
     """
     Busca un cliente por nombre_completo + telefono_celular.
     Si existe, retorna su ID. Si no, lo inserta y retorna el nuevo ID.
@@ -270,6 +270,7 @@ def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id):
         telefono:    telefono_celular del cliente.
         origen:      'mex' o 'usa'.
         sucursal_id: ID de la sucursal asociada al cliente.
+        fecha_xml:   datetime del XML para usar como created_at/updated_at.
 
     Returns:
         tuple(int, bool): (cliente_id, fue_creado)
@@ -315,7 +316,7 @@ def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id):
             true,
             'SIN DATOS',
             %s, %s,
-            NOW(), NOW()
+            %s, %s
         )
         RETURNING id
         """,
@@ -326,6 +327,8 @@ def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id):
             sucursal_id,
             USER_ID_IMPORTACION,
             USER_ID_IMPORTACION,
+            fecha_xml,   # created_at desde XML
+            fecha_xml,   # updated_at desde XML
         )
     )
     nuevo_id = cursor.fetchone()["id"]
@@ -408,7 +411,7 @@ def insertar_envio(cursor, datos):
     return cursor.fetchone()["id"]
 
 
-def insertar_paquete(cursor, envio_id, descripcion, cantidad):
+def insertar_paquete(cursor, envio_id, descripcion, cantidad, fecha_xml=None):
     """
     Inserta UN registro en la tabla `paquetes` para el envío dado.
 
@@ -442,18 +445,20 @@ def insertar_paquete(cursor, envio_id, descripcion, cantidad):
         ) VALUES (
             %s, %s, %s,
             %s, %s, %s, %s,
-            NOW(), NOW()
+            %s, %s
         )
         RETURNING id
         """,
         (
             envio_id,
-            descripcion,          # string completo, solo .strip() aplicado
+            descripcion,
             cantidad,
             float(DEFAULT_PESO),
             float(DEFAULT_V_ESTIMADO),
             float(DEFAULT_IMPUESTO),
             float(DEFAULT_PRECIO),
+            fecha_xml,   # created_at desde XML
+            fecha_xml,   # updated_at desde XML
         )
     )
     return cursor.fetchone()["id"]

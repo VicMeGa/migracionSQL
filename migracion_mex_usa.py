@@ -146,6 +146,7 @@ def migrar(ruta_xml):
                 telefono   = registro.get("telefono_receptor"),
                 origen     = ORIGEN_CLIENTE,
                 sucursal_id= sucursal_receptor_id or sucursal_emisor_id,
+                fecha_xml  = registro.get("fecha"),
             )
             if creado_r:
                 clientes_creados += 1
@@ -160,6 +161,7 @@ def migrar(ruta_xml):
                 telefono   = registro.get("telefono_emisor"),
                 origen     = ORIGEN_CLIENTE,
                 sucursal_id= sucursal_emisor_id,
+                fecha_xml  = registro.get("fecha"),
             )
             if creado_e:
                 clientes_creados += 1
@@ -192,6 +194,7 @@ def migrar(ruta_xml):
                 envio_id    = envio_id,
                 descripcion = registro["descripcion"],
                 cantidad    = registro["cantidad"],
+                fecha_xml   = registro.get("fecha"),
             )
 
             # ── 7. Commit individual ──────────────────────────────────────
