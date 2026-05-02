@@ -1,10 +1,15 @@
-# 📦 Tulcingo — Scripts de Migración de Datos
+
+# Project Title
+
+A brief description of what this project does and who it's for
+
+# Tulcingo — Scripts de Migración de Datos
 
 Scripts de Python para la migración masiva de datos históricos desde archivos Excel (SpreadsheetML `.xml`) hacia la base de datos PostgreSQL del sistema **Tulcingo Back** (backend Laravel).
 
 ---
 
-## 📁 Estructura del repositorio
+## Estructura del repositorio
 
 ```
 migration/
@@ -22,7 +27,7 @@ migration/
 
 ---
 
-## ⚙️ Requisitos
+## Requisitos
 
 - Python 3.10+
 - PostgreSQL (base de datos del sistema Tulcingo Back)
@@ -33,7 +38,7 @@ pip install psycopg2-binary
 
 ---
 
-## 🔧 Configuración inicial
+## Configuración inicial
 
 Antes de ejecutar cualquier script, edita `config.py`:
 
@@ -54,11 +59,11 @@ El archivo también contiene:
 - `ALIASES_NOMBRE` — variantes de nombres del XML → nombre oficial
 - `ETIQUETAS_AMBIGUAS_MEX/USA` — resolución de etiquetas con conflicto por contexto
 
-> ⚠️ Verifica que los IDs en `NOMBRE_A_SUCURSAL_ID` coincidan con los IDs reales de tu tabla `sucursales` antes de migrar.
+> Verifica que los IDs en `NOMBRE_A_SUCURSAL_ID` coincidan con los IDs reales de tu tabla `sucursales` antes de migrar.
 
 ---
 
-## 📋 Formatos de Excel soportados
+## Formatos de Excel soportados
 
 El parser detecta automáticamente el formato del archivo:
 
@@ -75,7 +80,7 @@ El parser detecta automáticamente el formato del archivo:
 
 ---
 
-## 🚀 Flujo de migración
+## Flujo de migración
 
 Ejecutar en este orden exacto:
 
@@ -103,9 +108,9 @@ python validar_migracion.py 'base de datos - NYC-MEX-2.xml'
 ```
 
 Genera un reporte `validacion_ARCHIVO_YYYYMMDD_HHMMSS.md` con:
-- ✅ Conteo de registros (XML vs BD)
-- ✅ Verificación de todos los campos por registro
-- ✅ Detección de duplicados exactos
+-  Conteo de registros (XML vs BD)
+-  Verificación de todos los campos por registro
+-  Detección de duplicados exactos
 
 ### 3. Limpiar duplicados
 
@@ -145,7 +150,7 @@ python validar_migracion.py 'BASE DE DATOS SEPT-DEC 2025.xml'
 
 ---
 
-## 🧩 Descripción de cada script
+## Descripción de cada script
 
 ### `config.py`
 Fuente de verdad de toda la configuración. Contiene la conexión a BD, el mapeo completo de sucursales (nombre → ID), aliases de variantes del XML y la resolución de etiquetas ambiguas por contexto MEX/USA.
@@ -203,7 +208,7 @@ Fusiona pares de clientes duplicados:
 
 ---
 
-## 🔑 Reglas de negocio importantes
+## Reglas de negocio importantes
 
 **Generación de folios:** Los folios se reinician cada semana. La unicidad lógica es `folio + semana + año`.
 
@@ -219,7 +224,7 @@ Fusiona pares de clientes duplicados:
 
 ---
 
-## ⚠️ Notas conocidas
+## Notas conocidas
 
 - **CUAUCEN:** Sucursal que aparece en algunos archivos pero no existe en el sistema. Se asigna automáticamente a `DESCONOCIDO`.
 - **Folios como fechas:** Excel puede interpretar folios alfanuméricos cortos como fechas. El parser los detecta y los marca como `FOLIO-FECHA-YYYY-MM-DD` en el log.
@@ -227,7 +232,7 @@ Fusiona pares de clientes duplicados:
 
 ---
 
-## 📝 Logs generados
+## Logs generados
 
 | Archivo | Generado por |
 |---|---|
