@@ -25,6 +25,7 @@ import psycopg2.extras
 from config import DB_CONFIG, USER_ID_IMPORTACION, ETIQUETAS_AMBIGUAS_USA
 from xml_parser import parsear_xml
 from db_helpers import (
+    obtener_origen_sucursal,
     reset_contador_sin_etiqueta,
     resolver_sucursal_id,
     resolver_sucursal_destino,
@@ -135,21 +136,33 @@ def migrar(ruta_xml):
 
             # ── 1. Resolver sucursales emisor y receptor ──────────────────
             # FORMATO_11 (USA→MEX):
-            #   emisor   = sucursal USA → inferida por prefijo del folio
-            #   receptor = sucursal MEX → viene de col 11 (DEST) via origen_raw
+            #   emisor   = sucursal USA → FORZAR prefijo del folio (ignorar origen_raw
+            #              que contiene el DEST/sucursal MEX, no la sucursal emisora)
+            #   receptor = sucursal MEX → viene de col 11 (DEST) via destino
             # FORMATO_9 (MEX→USA):
             #   emisor   = sucursal MEX → origen_raw o prefijo de folio
             #   receptor = sucursal USA → viene de col 6 (destino)
-            sucursal_emisor_id   = resolver_sucursal_id(registro, ETIQUETAS_CTX)
+            from xml_parser import FORMATO_11 as _FMT11
+            if registro.get("formato") == _FMT11:
+                # Crear registro temporal sin origen_raw para forzar resolución
+                # por prefijo de folio (sucursal USA emisora)
+                registro_emisor = {**registro, "origen_raw": None}
+                sucursal_emisor_id = resolver_sucursal_id(registro_emisor, ETIQUETAS_CTX)
+            else:
+                sucursal_emisor_id = resolver_sucursal_id(registro, ETIQUETAS_CTX)
             sucursal_receptor_id = resolver_sucursal_destino(registro["destino"])
 
             # ── 3. firstOrCreate cliente receptor ────────────────────────
+            # Derivar origen del cliente según la sucursal que le corresponde
+            _suc_receptor = sucursal_receptor_id or sucursal_emisor_id
+            _origen_receptor = obtener_origen_sucursal(cursor, _suc_receptor) or ORIGEN_CLIENTE
+
             cliente_receptor_id, creado_r = first_or_create_cliente(
                 cursor,
                 nombre     = registro["destinatario"],
                 telefono   = registro.get("telefono_receptor"),
-                origen     = ORIGEN_CLIENTE,
-                sucursal_id= sucursal_receptor_id or sucursal_emisor_id,
+                origen     = _origen_receptor,
+                sucursal_id= _suc_receptor,
                 fecha_xml  = registro.get("fecha"),
             )
             if creado_r:
@@ -158,11 +171,13 @@ def migrar(ruta_xml):
                 clientes_reutilizados += 1
 
             # ── 4. firstOrCreate cliente emisor ──────────────────────────
+            _origen_emisor = obtener_origen_sucursal(cursor, sucursal_emisor_id) or ORIGEN_CLIENTE
+
             cliente_emisor_id, creado_e = first_or_create_cliente(
                 cursor,
                 nombre     = registro["remitente"],
                 telefono   = registro.get("telefono_emisor"),
-                origen     = ORIGEN_CLIENTE,
+                origen     = _origen_emisor,
                 sucursal_id= sucursal_emisor_id,
                 fecha_xml  = registro.get("fecha"),
             )

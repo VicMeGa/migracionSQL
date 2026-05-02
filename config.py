@@ -1,21 +1,23 @@
 # =============================================================================
 # config.py — Configuración maestra para ambos scripts de migración
-# IDs completos: 37 originales + 29 nuevas = 66 sucursales totales
+# IDs basados en BD limpia actual (59 sucursales, MAX id=82)
+# Las sucursales CAJAS - NO existen en esta BD — sus etiquetas
+# (CM, CPR, CQ, CSI, CW) se mapean a las sucursales USA equivalentes
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # 1. CONEXIÓN A BASE DE DATOS
 # -----------------------------------------------------------------------------
 DB_CONFIG = {
-    #"host":     "192.168.0.115",
-    "host":     "100.96.225.107",
+    "host":     "192.168.0.115",
+    #"host":     "100.96.225.107",
     "port":     5432,
     "user":     "tulcingo_user",
     "password": "123456",
-    "database": "fecha",
+    "database": "paimon",
 }
 
-USER_ID_IMPORTACION = 1   # ← Cambia al ID real del usuario Laravel importador
+USER_ID_IMPORTACION = 1   # ← ID del usuario Laravel importador
 
 # -----------------------------------------------------------------------------
 # 2. CATÁLOGO DE TIPO DE PRODUCTO
@@ -24,88 +26,84 @@ TIPO_PRODUCTO_CAJA    = 12
 TIPO_PRODUCTO_DEFAULT = 13
 
 # -----------------------------------------------------------------------------
-# 3. DICCIONARIO MAESTRO: Nombre oficial BD → sucursal_id
-#    IDs verificados con SELECT real (66 sucursales)
+# 3. DICCIONARIO MAESTRO: Nombre oficial → sucursal_id
+#    Fuente: SELECT id, nombre FROM sucursales ORDER BY id (59 sucursales)
 # -----------------------------------------------------------------------------
 NOMBRE_A_SUCURSAL_ID = {
-    # ── USA (IDs 1-7, 14, 19-20, 22-24, 28, 58, 60) ─────────────────────────
-    "CAJAS - BROOKLYN":       1,
-    "CAJAS - MANHATTAN":      2,
-    "CAJAS - PORT RICHMOND":  3,
-    "CAJAS - QUEENS":         4,
-    "CAJAS - STATEN ISLAND":  5,
-    "CAJAS - WESTBURY":       6,
-    "CONNECTICUT":            7,
-    "Oxnard":                14,
-    "BROOKLYN":              14,   # Oxnard es la sucursal registrada con etiqueta B (Brooklyn)
-    "QUEENS":                19,
-    "MANHATTAN":             20,
-    "WESTBURY":              22,
-    "PORT RICHMOND":         23,
-    "STATEN ISLAND":         24,
-    "X CORREO":              28,
-    "Corona Manhattan":      58,
-    "BRONX":                 60,
+    # ── USA ──────────────────────────────────────────────────────────────────
+    "Oxnard":               14,
+    "QUEENS":               19,
+    "MANHATTAN":            20,
+    "WESTBURY":             22,
+    "PORT RICHMOND":        23,
+    "STATEN ISLAND":        24,
+    "X CORREO":             28,
+    "Corona Manhattan":     58,
+    "BRONX":                60,
+    # CAJAS - no existen → mapear a sucursal USA equivalente
+    "CAJAS - BROOKLYN":     14,   # → Oxnard (Brooklyn)
+    "CAJAS - MANHATTAN":    20,   # → MANHATTAN
+    "CAJAS - PORT RICHMOND":23,   # → PORT RICHMOND
+    "CAJAS - QUEENS":       19,   # → QUEENS
+    "CAJAS - STATEN ISLAND":24,   # → STATEN ISLAND
+    "CAJAS - WESTBURY":     22,   # → WESTBURY
+    "CONNECTICUT":          48,   # No existe → DESCONOCIDO
 
-    # ── México originales (IDs 15, 18, 25-27, 29-47, 52, 55-56) ─────────────
-    "Tlaxcala":              15,
-    "TULCINGO":              18,
-    "HUAMUXTITLAN":          25,
-    "CHILA DE LA SAL":       26,
-    "ZAPOTITLAN":            27,
-    "X CORREO":              28,
-    "ACAXTLAHUACAN":         29,
-    "AXOCHIAPAN":            30,
-    "CUALAC":                31,
-    "CHIAUTLA":              32,
-    "CUALAC MIREYA":         33,
-    "CHILAPA":               34,
-    "ACATLAN":               35,
-    "DISTRITO FEDERAL":      36,
-    "PROGRESO":              37,
-    "PUEBLA MAYORAZGO":      38,
-    "ATENCINGO":             39,
-    "CUAUTLA AÑO DE JUAREZ": 40,
-    "HUEHUETLAN":            41,
-    "IXCAMILPA":             42,
-    "ALPOYECA":              43,
-    "CUAUTLA CENTRO":        44,
-    "TOLTECAMILA":           45,
-    "MATAMOROS":             46,
-    "IZUCAR PANCHO":         47,
-    "DESCONOCIDO":           48,
-    "Acatlán":               52,
-    "Atlixco-Matamoros":     55,
-    "Año Nuevo":             56,
-
-    # ── México nuevas (IDs 61-82) ─────────────────────────────────────────────
-    "CHILPANCINGO GRO.":     61,
-    "HUAJUAPAN":             62,
-    "IXCATEOPAN":            63,
-    "JOJUTLA":               64,
-    "MOMOXPAN":              65,
-    "OLINALA-ELENA":         66,
-    "OLINALA-VICTOR":        67,
-    "POCHUTLA":              68,
-    "PUEBLA - VW":           69,
-    "SAN PEDRO OCOTLAN":     70,
-    "SANTA ANA RAYON":       71,
-    "TEHUITZINGO":           72,
-    "TEPEACA":               73,
-    "TEPETLAPA GUERRERO":    74,
-    "TLALT-MARILU":          75,
-    "TLALTEPEXI":            76,
-    "TLAPA":                 77,
-    "TLAPA JAVIER":          78,
-    "XICOTLAN":              79,
-    "XIHUITLIPA":            80,
-    "XOCHI":                 81,
-    "YUPILTEPEC":            82,
+    # ── México ────────────────────────────────────────────────────────────────
+    "Tlaxcala":             15,
+    "TULCINGO":             18,
+    "HUAMUXTITLAN":         25,
+    "CHILA DE LA SAL":      26,
+    "ZAPOTITLAN":           27,
+    "ACAXTLAHUACAN":        29,
+    "AXOCHIAPAN":           30,
+    "CUALAC":               31,
+    "CHIAUTLA":             32,
+    "CUALAC MIREYA":        33,
+    "CHILAPA":              34,
+    "ACATLAN":              35,
+    "DISTRITO FEDERAL":     36,
+    "PROGRESO":             37,
+    "PUEBLA MAYORAZGO":     38,
+    "ATENCINGO":            39,
+    "CUAUTLA AÑO DE JUAREZ":40,
+    "HUEHUETLAN":           41,
+    "IXCAMILPA":            42,
+    "ALPOYECA":             43,
+    "CUAUTLA CENTRO":       44,
+    "TOLTECAMILA":          45,
+    "MATAMOROS":            46,
+    "IZUCAR PANCHO":        47,
+    "DESCONOCIDO":          48,
+    "Acatlán":              52,
+    "Atlixco-Matamoros":    55,
+    "Año Nuevo":            56,
+    "CHILPANCINGO GRO.":    61,
+    "HUAJUAPAN":            62,
+    "IXCATEOPAN":           63,
+    "JOJUTLA":              64,
+    "MOMOXPAN":             65,
+    "OLINALA-ELENA":        66,
+    "OLINALA-VICTOR":       67,
+    "POCHUTLA":             68,
+    "PUEBLA - VW":          69,
+    "SAN PEDRO OCOTLAN":    70,
+    "SANTA ANA RAYON":      71,
+    "TEHUITZINGO":          72,
+    "TEPEACA":              73,
+    "TEPETLAPA GUERRERO":   74,
+    "TLALT-MARILU":         75,
+    "TLALTEPEXI":           76,
+    "TLAPA":                77,
+    "TLAPA JAVIER":         78,
+    "XICOTLAN":             79,
+    "XIHUITLIPA":           80,
+    "XOCHI":                81,
+    "YUPILTEPEC":           82,
 }
 
 # -----------------------------------------------------------------------------
 # 4. ALIASES: variante del XML → nombre oficial en NOMBRE_A_SUCURSAL_ID
-#    Claves en MAYÚSCULAS (se aplica .upper() antes de buscar)
 # -----------------------------------------------------------------------------
 ALIASES_NOMBRE = {
     # ── TULCINGO ──────────────────────────────────────────────────────────────
@@ -119,10 +117,10 @@ ALIASES_NOMBRE = {
     # ── CUAUTLA AÑO DE JUAREZ ────────────────────────────────────────────────
     "CUAUTLA AÑO DE JUAREZ":        "CUAUTLA AÑO DE JUAREZ",
     "AÑO DE JUAREZ":                "CUAUTLA AÑO DE JUAREZ",
-    "CUAUTLA AÑO JUAREZ":           "CUAUTLA AÑO DE JUAREZ",   # sin DE
     "CUAUTLA DE JUAREZ":            "CUAUTLA AÑO DE JUAREZ",
     "CUAUTLA JUAREZ":               "CUAUTLA AÑO DE JUAREZ",
     "AÑO NUEVO DE JUAREZ":          "CUAUTLA AÑO DE JUAREZ",
+    "CUAUTLA AÑO JUAREZ":           "CUAUTLA AÑO DE JUAREZ",
 
     # ── CUALAC MIREYA ─────────────────────────────────────────────────────────
     "CUALAC MIREYA":                "CUALAC MIREYA",
@@ -171,7 +169,7 @@ ALIASES_NOMBRE = {
     "HUAMUXTITLAN":                 "HUAMUXTITLAN",
     "HUAMUX-LT":                    "HUAMUXTITLAN",
     "HUAMUX LT":                    "HUAMUXTITLAN",
-    "HUAMUX":                       "HUAMUXTITLAN",   # alias corto usado en XML
+    "HUAMUX":                       "HUAMUXTITLAN",
 
     # ── TOLTECAMILA ──────────────────────────────────────────────────────────
     "TOLTECAMILA":                  "TOLTECAMILA",
@@ -199,7 +197,7 @@ ALIASES_NOMBRE = {
     "CHILA DE LA SAL":              "CHILA DE LA SAL",
     "CHILA":                        "CHILA DE LA SAL",
 
-    # ── Nuevas MEX (IDs 61-82) ────────────────────────────────────────────────
+    # ── Nuevas MEX ────────────────────────────────────────────────────────────
     "CHILPANCINGO GRO.":            "CHILPANCINGO GRO.",
     "CHILPANCINGO GRO":             "CHILPANCINGO GRO.",
     "CHILPANCINGO":                 "CHILPANCINGO GRO.",
@@ -228,9 +226,31 @@ ALIASES_NOMBRE = {
     "XOCHI":                        "XOCHI",
     "YUPILTEPEC":                   "YUPILTEPEC",
 
+    # ── USA ───────────────────────────────────────────────────────────────────
+    "MANHATTAN":                    "MANHATTAN",
+    "CORONA MANHATTAN":             "Corona Manhattan",
+    "QUEENS":                       "QUEENS",
+    "BROOKLYN":                     "Oxnard",
+    "BRONX":                        "BRONX",
+    "PORT RICHMOND":                "PORT RICHMOND",
+    "STATEN ISLAND":                "STATEN ISLAND",
+    "WESTBURY":                     "WESTBURY",
+    "X CORREO":                     "X CORREO",
+    "XCORREO":                      "X CORREO",
+    "OXNARD":                       "Oxnard",
+    "CONNECTICUT":                  "CONNECTICUT",
+    # CAJAS - mapear a sucursal USA equivalente
+    "CAJAS - BROOKLYN":             "CAJAS - BROOKLYN",
+    "CAJAS - MANHATTAN":            "CAJAS - MANHATTAN",
+    "CAJAS - PORT RICHMOND":        "CAJAS - PORT RICHMOND",
+    "CAJAS - QUEENS":               "CAJAS - QUEENS",
+    "CAJAS - STATEN ISLAND":        "CAJAS - STATEN ISLAND",
+    "CAJAS - WESTBURY":             "CAJAS - WESTBURY",
+    "ANIO":                         "Año Nuevo",
 
-    # ── Etiquetas cortas de BD (usadas en columna DEST del XML USA→MEX) ───────
+    # ── Etiquetas cortas de BD ────────────────────────────────────────────────
     "CB":       "CAJAS - BROOKLYN",
+    "CM":       "CAJAS - MANHATTAN",
     "CPR":      "CAJAS - PORT RICHMOND",
     "CQ":       "CAJAS - QUEENS",
     "CSI":      "CAJAS - STATEN ISLAND",
@@ -257,7 +277,6 @@ ALIASES_NOMBRE = {
     "TL":       "Tlaxcala",
     "DES":      "DESCONOCIDO",
     "ANiO":     "Año Nuevo",
-    "ANIO":     "Año Nuevo",    # variante sin tilde usada en XML USA→MEX
     "ATX-MAY":  "Atlixco-Matamoros",
     "V":        "CHILPANCINGO GRO.",
     "U":        "HUAJUAPAN",
@@ -279,34 +298,12 @@ ALIASES_NOMBRE = {
     "Y":        "YUPILTEPEC",
     "E":        "PROGRESO",
     "XMAIL":    "X CORREO",
-    # Etiquetas ambiguas → resuelven según contexto del script
-    # En DEST de USA→MEX estas son siempre sucursales MEX:
     "W":        "TEHUITZINGO",
     "Z":        "TLALT-MARILU",
     "Q":        "TLALTEPEXI",
     "M":        "MATAMOROS",
     "B":        "AXOCHIAPAN",
     "PR":       "PORT RICHMOND",
-
-    # ── USA ───────────────────────────────────────────────────────────────────
-    "MANHATTAN":                    "MANHATTAN",
-    "CORONA MANHATTAN":             "Corona Manhattan",
-    "QUEENS":                       "QUEENS",
-    "BROOKLYN":                     "Oxnard",
-    "BRONX":                        "BRONX",
-    "PORT RICHMOND":                "PORT RICHMOND",
-    "STATEN ISLAND":                "STATEN ISLAND",
-    "WESTBURY":                     "WESTBURY",
-    "X CORREO":                     "X CORREO",
-    "XCORREO":                      "X CORREO",
-    "OXNARD":                       "Oxnard",
-    "CONNECTICUT":                  "CONNECTICUT",
-    "CAJAS - BROOKLYN":             "CAJAS - BROOKLYN",
-    "CAJAS - MANHATTAN":            "CAJAS - MANHATTAN",
-    "CAJAS - PORT RICHMOND":        "CAJAS - PORT RICHMOND",
-    "CAJAS - QUEENS":               "CAJAS - QUEENS",
-    "CAJAS - STATEN ISLAND":        "CAJAS - STATEN ISLAND",
-    "CAJAS - WESTBURY":             "CAJAS - WESTBURY",
 }
 
 # -----------------------------------------------------------------------------
@@ -316,10 +313,10 @@ ALIASES_NOMBRE = {
 # Script A — MEX→USA
 ETIQUETAS_AMBIGUAS_MEX = {
     "M":    "MATAMOROS",
-    "Z":    "ZAPOTITLAN",
+    "Z":    "TLALT-MARILU",
     "W":    "TEHUITZINGO",
     "Q":    "TLALTEPEXI",
-    "CM":   "CUALAC MIREYA",
+    "CM":   "CAJAS - MANHATTAN",   # no existe → MANHATTAN
     "O":    "OLINALA-ELENA",
     "O-":   "OLINALA-VICTOR",
     "B":    "AXOCHIAPAN",
@@ -332,18 +329,22 @@ ETIQUETAS_AMBIGUAS_USA = {
     "Z":    "STATEN ISLAND",
     "W":    "WESTBURY",
     "Q":    "QUEENS",
-    "CM":   "CAJAS - MANHATTAN",
+    "CM":   "CAJAS - MANHATTAN",   # → MANHATTAN
     "O":    "OLINALA-ELENA",
     "O-":   "OLINALA-VICTOR",
     "B":    "Oxnard",
     "J":    "ALPOYECA",
+    "CPR":  "PORT RICHMOND",
+    "CQ":   "QUEENS",
+    "CSI":  "STATEN ISLAND",
+    "CW":   "WESTBURY",
+    "CB":   "Oxnard",
 }
 
 # -----------------------------------------------------------------------------
-# 6. ETIQUETAS ÚNICAS (sin ambigüedad, compartidas por ambos scripts)
+# 6. ETIQUETAS ÚNICAS
 # -----------------------------------------------------------------------------
 ETIQUETAS_UNICAS = {
-    # ── Etiquetas reales de BD ────────────────────────────────────────────────
     "TUL":      "TULCINGO",
     "ZAP":      "ZAPOTITLAN",
     "ACAX":     "ACAXTLAHUACAN",
@@ -367,10 +368,7 @@ ETIQUETAS_UNICAS = {
     "TL":       "Tlaxcala",
     "DES":      "DESCONOCIDO",
     "ANiO":     "Año Nuevo",
-    "ANIO":     "Año Nuevo",    # variante sin tilde usada en XML USA→MEX
     "ATX-MAY":  "Atlixco-Matamoros",
-
-    # ── Etiquetas del ODS (mapeadas a nombres reales de BD) ───────────────────
     "T":        "TLAPA",
     "TJ-":      "TLAPA JAVIER",
     "L":        "TOLTECAMILA",
@@ -380,16 +378,11 @@ ETIQUETAS_UNICAS = {
     "G":        "ATENCINGO",
     "H":        "CUAUTLA AÑO DE JUAREZ",
     "BX":       "BRONX",
-    "CB":       "CAJAS - BROOKLYN",
-    "CPR":      "CAJAS - PORT RICHMOND",
-    "CQ":       "CAJAS - QUEENS",
-    "CSI":      "CAJAS - STATEN ISLAND",
-    "CW":       "CAJAS - WESTBURY",
     "CH":       "CHIAUTLA",
     "CP":       "CHILAPA",
     "V":        "CHILPANCINGO GRO.",
     "CHM":      "CHILAPA",
-    "CNT":      "CONNECTICUT",
+    "CNT":      "DESCONOCIDO",     # CONNECTICUT no existe → DESCONOCIDO
     "C":        "CUALAC",
     "K":        "CUAUTLA CENTRO",
     "DF":       "DISTRITO FEDERAL",
@@ -412,16 +405,23 @@ ETIQUETAS_UNICAS = {
     "Y":        "YUPILTEPEC",
     "E":        "PROGRESO",
     "XMAIL":    "X CORREO",
+    # Etiquetas CAJAS - → sucursal USA equivalente
+    "CB":       "CAJAS - BROOKLYN",
+    "CM":       "CAJAS - MANHATTAN",
+    "CPR":      "CAJAS - PORT RICHMOND",
+    "CQ":       "CAJAS - QUEENS",
+    "CSI":      "CAJAS - STATEN ISLAND",
+    "CW":       "CAJAS - WESTBURY",
 }
 
 # -----------------------------------------------------------------------------
-# 7. REGLA DE LOS 200 — último recurso: asigna DESCONOCIDO
+# 7. REGLA DE LOS 200 — fallback a DESCONOCIDO
 # -----------------------------------------------------------------------------
 SUCURSALES_SIN_ETIQUETA = ["DESCONOCIDO"]
 BLOQUE_REGLA_200 = 999999
 
 # -----------------------------------------------------------------------------
-# 8. VALORES DEFAULT PARA CAMPOS FALTANTES EN EL XML
+# 8. VALORES DEFAULT
 # -----------------------------------------------------------------------------
 DEFAULT_PESO          = 0.00
 DEFAULT_PRECIO_TOTAL  = 0.00

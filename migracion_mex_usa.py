@@ -25,6 +25,7 @@ import psycopg2.extras
 from config import DB_CONFIG, USER_ID_IMPORTACION, ETIQUETAS_AMBIGUAS_MEX
 from xml_parser import parsear_xml
 from db_helpers import (
+    obtener_origen_sucursal,
     reset_contador_sin_etiqueta,
     resolver_sucursal_id,
     resolver_sucursal_destino,
@@ -140,12 +141,16 @@ def migrar(ruta_xml):
             sucursal_receptor_id = resolver_sucursal_destino(registro["destino"])
 
             # ── 3. firstOrCreate cliente receptor ────────────────────────
+            # Derivar origen del cliente según la sucursal que le corresponde
+            _suc_receptor = sucursal_receptor_id or sucursal_emisor_id
+            _origen_receptor = obtener_origen_sucursal(cursor, _suc_receptor) or ORIGEN_CLIENTE
+
             cliente_receptor_id, creado_r = first_or_create_cliente(
                 cursor,
                 nombre     = registro["destinatario"],
                 telefono   = registro.get("telefono_receptor"),
-                origen     = ORIGEN_CLIENTE,
-                sucursal_id= sucursal_receptor_id or sucursal_emisor_id,
+                origen     = _origen_receptor,
+                sucursal_id= _suc_receptor,
                 fecha_xml  = registro.get("fecha"),
             )
             if creado_r:
@@ -155,11 +160,13 @@ def migrar(ruta_xml):
 
             # ── 4. firstOrCreate cliente emisor ──────────────────────────
             # El remitente no tiene teléfono propio en el XML → usar None
+            _origen_emisor = obtener_origen_sucursal(cursor, sucursal_emisor_id) or ORIGEN_CLIENTE
+
             cliente_emisor_id, creado_e = first_or_create_cliente(
                 cursor,
                 nombre     = registro["remitente"],
                 telefono   = registro.get("telefono_emisor"),
-                origen     = ORIGEN_CLIENTE,
+                origen     = _origen_emisor,
                 sucursal_id= sucursal_emisor_id,
                 fecha_xml  = registro.get("fecha"),
             )

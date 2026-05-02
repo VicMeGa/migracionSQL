@@ -259,6 +259,22 @@ def resolver_sucursal_destino(destino_raw):
 # OPERACIONES DE BASE DE DATOS
 # =============================================================================
 
+def obtener_origen_sucursal(cursor, sucursal_id):
+    """
+    Retorna el origen ('mex' o 'usa') de una sucursal dado su ID.
+    Se usa para asignar el origen correcto al cliente según dónde
+    está ubicada su sucursal, no según el script que lo procesa.
+    """
+    if not sucursal_id:
+        return None
+    cursor.execute(
+        "SELECT origen FROM sucursales WHERE id = %s",
+        (sucursal_id,)
+    )
+    row = cursor.fetchone()
+    return row["origen"] if row else None
+
+
 def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id, fecha_xml=None):
     """
     Busca un cliente por nombre_completo + telefono_celular.
@@ -276,8 +292,9 @@ def first_or_create_cliente(cursor, nombre, telefono, origen, sucursal_id, fecha
         tuple(int, bool): (cliente_id, fue_creado)
     """
     # nombre_completo es NOT NULL en BD
+    # "DESCONOCIDO" es el valor estándar para remitentes sin identificar
     if not nombre:
-        nombre = "SIN NOMBRE"
+        nombre = "DESCONOCIDO"
 
     # Búsqueda por nombre + teléfono
     # Normalizar teléfono: NOT NULL en BD → usar 'SIN DATOS' si no viene en XML

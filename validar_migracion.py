@@ -137,12 +137,18 @@ def validar_campos(cursor, registros_xml, formato):
                 e.created_at,
                 ce.nombre_completo  AS nombre_emisor,
                 ce.telefono_celular AS tel_emisor,
+                ce.origen           AS origen_emisor_bd,
                 cr.nombre_completo  AS nombre_receptor,
                 cr.telefono_celular AS tel_receptor,
+                cr.origen           AS origen_receptor_bd,
+                se.origen           AS origen_sucursal_emisor,
+                sr.origen           AS origen_sucursal_receptor,
                 p.descripcion       AS descripcion_paquete
             FROM envios e
             LEFT JOIN clientes ce ON ce.id = e.cliente_emisor
             LEFT JOIN clientes cr ON cr.id = e.cliente_receptor
+            LEFT JOIN sucursales se ON se.id = e.sucursal_emisor
+            LEFT JOIN sucursales sr ON sr.id = e.sucursal_receptor
             LEFT JOIN paquetes p  ON p.envio_id = e.id
             WHERE e.folio = %s AND e.semana = %s AND e.anio = %s
             LIMIT 1
@@ -194,21 +200,36 @@ def validar_campos(cursor, registros_xml, formato):
         check("nombre_emisor",     r.get("remitente"),       bd["nombre_emisor"])
         check("descripcion",       r.get("descripcion"),     bd["descripcion_paquete"])
 
-        # Sucursal emisor: comparar resolviendo el XML a ID y comparando con BD
-        if r.get("origen_raw"):
-            from db_helpers import _lookup_sucursal_id, resolver_sucursal_id
-            from config import ALIASES_NOMBRE, NOMBRE_A_SUCURSAL_ID
-            # Resolver el nombre/etiqueta del XML a ID
-            origen_upper = str(r["origen_raw"]).strip().upper()
-            nombre_resuelto = ALIASES_NOMBRE.get(origen_upper, origen_upper)
-            id_xml_emisor = NOMBRE_A_SUCURSAL_ID.get(nombre_resuelto)
-            id_bd_emisor  = bd["sucursal_emisor"]
-            if id_xml_emisor and id_bd_emisor and id_xml_emisor != id_bd_emisor:
-                diffs.append((
-                    "sucursal_emisor",
-                    f"{r['origen_raw']} (ID={id_xml_emisor})",
-                    f"{id_a_nombre.get(id_bd_emisor, '?')} (ID={id_bd_emisor})"
-                ))
+        # Sucursal emisor: lógica depende del formato
+        # FORMATO_11 (USA→MEX): el emisor se resuelve por prefijo del folio
+        #   origen_raw = DEST (sucursal MEX destino), NO es la sucursal emisora
+        # FORMATO_9  (MEX→USA): el emisor se resuelve por origen_raw
+        from xml_parser import FORMATO_11 as _FMT11
+        from db_helpers import _extraer_prefijo_folio
+        from config import ALIASES_NOMBRE, NOMBRE_A_SUCURSAL_ID, ETIQUETAS_AMBIGUAS_USA, ETIQUETAS_UNICAS
+
+        id_bd_emisor = bd["sucursal_emisor"]
+
+        if r.get("formato") == _FMT11:
+            # Resolver por prefijo del folio (igual que hace migracion_usa_mex.py)
+            prefijo = _extraer_prefijo_folio(r["folio"])
+            nombre_por_pref = ETIQUETAS_AMBIGUAS_USA.get(prefijo) or ETIQUETAS_UNICAS.get(prefijo)
+            id_xml_emisor = NOMBRE_A_SUCURSAL_ID.get(nombre_por_pref) if nombre_por_pref else None
+        else:
+            # FORMATO_9: resolver por origen_raw
+            if r.get("origen_raw"):
+                origen_upper = str(r["origen_raw"]).strip().upper()
+                nombre_resuelto = ALIASES_NOMBRE.get(origen_upper, origen_upper)
+                id_xml_emisor = NOMBRE_A_SUCURSAL_ID.get(nombre_resuelto)
+            else:
+                id_xml_emisor = None
+
+        if id_xml_emisor and id_bd_emisor and id_xml_emisor != id_bd_emisor:
+            diffs.append((
+                "sucursal_emisor",
+                f"{r.get('origen_raw') or r['folio']} (ID={id_xml_emisor})",
+                f"{id_a_nombre.get(id_bd_emisor, '?')} (ID={id_bd_emisor})"
+            ))
 
         # Sucursal receptor: comparar resolviendo etiqueta/nombre del XML a ID
         if r.get("destino"):
@@ -222,6 +243,24 @@ def validar_campos(cursor, registros_xml, formato):
                     "sucursal_receptor",
                     f"{r['destino']} (ID={id_xml_receptor})",
                     f"{id_a_nombre.get(id_bd_receptor, '?')} (ID={id_bd_receptor})"
+                ))
+
+        # ── Congruencia origen_cliente vs origen_sucursal ────────────────
+        # Verifica que el origen del cliente coincida con el origen de su sucursal
+        if bd["origen_emisor_bd"] and bd["origen_sucursal_emisor"]:
+            if bd["origen_emisor_bd"] != bd["origen_sucursal_emisor"]:
+                diffs.append((
+                    "origen_cliente_emisor",
+                    f"debe ser '{bd['origen_sucursal_emisor']}' (según sucursal emisora)",
+                    f"tiene '{bd['origen_emisor_bd']}'"
+                ))
+
+        if bd["origen_receptor_bd"] and bd["origen_sucursal_receptor"]:
+            if bd["origen_receptor_bd"] != bd["origen_sucursal_receptor"]:
+                diffs.append((
+                    "origen_cliente_receptor",
+                    f"debe ser '{bd['origen_sucursal_receptor']}' (según sucursal receptora)",
+                    f"tiene '{bd['origen_receptor_bd']}'"
                 ))
 
         # ── Campos exclusivos USA→MEX ────────────────────────────────────

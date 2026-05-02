@@ -28,6 +28,7 @@ from datetime import datetime
 
 sys.path.insert(0, '.')
 from config import DB_CONFIG
+from db_helpers import obtener_origen_sucursal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -199,21 +200,34 @@ def main():
                 id_m = accion["id_maestro"]
                 id_d = accion["id_dup"]
 
-                # 1. Redirigir envios.cliente_emisor
+                # 1. Corregir origen del maestro según su sucursal asignada
+                cursor.execute(
+                    "SELECT sucursal_id FROM clientes WHERE id = %s", (id_m,)
+                )
+                suc_maestro = cursor.fetchone()
+                if suc_maestro and suc_maestro["sucursal_id"]:
+                    origen_correcto = obtener_origen_sucursal(cursor, suc_maestro["sucursal_id"])
+                    if origen_correcto:
+                        cursor.execute(
+                            "UPDATE clientes SET origen = %s WHERE id = %s AND origen != %s",
+                            (origen_correcto, id_m, origen_correcto)
+                        )
+
+                # 2. Redirigir envios.cliente_emisor
                 cursor.execute(
                     "UPDATE envios SET cliente_emisor = %s WHERE cliente_emisor = %s",
                     (id_m, id_d)
                 )
                 envios_redirigidos += cursor.rowcount
 
-                # 2. Redirigir envios.cliente_receptor
+                # 3. Redirigir envios.cliente_receptor
                 cursor.execute(
                     "UPDATE envios SET cliente_receptor = %s WHERE cliente_receptor = %s",
                     (id_m, id_d)
                 )
                 envios_redirigidos += cursor.rowcount
 
-                # 3. Eliminar cliente duplicado
+                # 4. Eliminar cliente duplicado
                 #    cliente_cambios se limpia automáticamente por CASCADE
                 cursor.execute("DELETE FROM clientes WHERE id = %s", (id_d,))
                 clientes_eliminados += cursor.rowcount
@@ -314,4 +328,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()          
+    main()
